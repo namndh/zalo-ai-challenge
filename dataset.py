@@ -4,10 +4,13 @@ from torch.utils.data import DataLoader, Dataset
 from torchaudio import transforms
 import torchaudio
 import glob
+from utils import extract_features
+import numpy as np
+
 
 class HitSongDataset(Dataset):
     """ Hit song zalo challeng 2019 dataet"""
-    def __init__(self, data_dir, data_info, train, transform=None):
+    def __init__(self, data_dir, data_info, train=True, transform=None):
         """
 
         :param data_dir (string): path to directory that store mp3 files
@@ -28,12 +31,17 @@ class HitSongDataset(Dataset):
 
     def __getitem__(self, index):
         fn = self.fns[index]
-        audio = torchaudio.load(fn)
+        features = extract_features(fn)
         metadata, label = self.get_metadata(fn)
+        features = features + np.array(metadata)
+        features = torch.from_numpy(features)
+        if label == -1:
+            return features
+        else:
+            return features, label
 
-
-
-
+    def __len__(self):
+        return len(self.fns)
 
     def get_metadata(self, fn):
         """
@@ -51,10 +59,17 @@ class HitSongDataset(Dataset):
                     .where(self.data_info['ID'] == audio_id).dropna()
         results = []
         labels = []
-        for index, rows in self.data_info.iterrows():
+        for index, rows in metadata.iterrows():
             result = [rows.time_interval, rows.artist_count, rows.composers_count]
             results.append(result)
             labels.append(rows.label)
-        return results[0], labels[0]
+        if self.train and len(results) >= 1:
+            return results[0], labels[0]
+        if self.train and len(results) == 0:
+            raise RuntimeError('Can not extract metadata')
+        if not self.train and len(results) == 0:
+            return [0, 0, 0], -1
+        if not self.train and len(results) >= 1:
+            return results[0], -1
 
 

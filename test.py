@@ -2,12 +2,10 @@ import os
 import torch
 import torchaudio
 from torchaudio import transforms
+import librosa
+import numpy as np
 
-data, sample_rate = torchaudio.load('/home/teko/Downloads/test.mp3')
-print(data.shape)
-print(sample_rate)
+data, sr = librosa.load('/home/teko/Downloads/test.mp3', mono=True)
+chroma_stft = librosa.feature.chroma_stft(data, sr)
+print(np.mean(chroma_stft))
 
-amp_db = transforms.AmplitudeToDB(stype='magnitude')
-db = amp_db.forward(data)
-print(db.shape)
-https://gist.github.com/parulnith/7f8c174e6ac099e86f0495d3d9a4c01e#file-untitled9-ipynb
